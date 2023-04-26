@@ -1,0 +1,17 @@
+{
+  "name": "predictive_maintenence_server",
+  "version": "1.0.0",
+  "description": "This is a server for gathering and storing time series sensor data.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Murad Mollaoğlu",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "md5": "^2.3.0",
+    "sqlite3": "^5.1.6"
+  }
+}
