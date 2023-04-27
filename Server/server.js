@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const dbFactory = require('./db.js');
-const db = dbFactory("test");
+
 // Server port
 const HTTP_PORT = 8000;
 // Start server
