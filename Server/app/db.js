@@ -2,9 +2,8 @@ const sqlite3 = require('sqlite3').verbose();
 const md5 = require('md5');
 
 
-let db = (name) => {
-    name = name.replace(/([^a-z0-9]+)/gi, "-");
-    return new sqlite3.Database('db/' + name + '.sqlite', (err) => {
+let db = (path) => {
+    return new sqlite3.Database(path + '.sqlite', (err) => {
         if (err) {
             console.error(err.message);
             throw err;
@@ -14,4 +13,4 @@ let db = (name) => {
     })
 }
 
-module.exports = db
+module.exports = db;
