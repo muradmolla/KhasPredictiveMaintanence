@@ -36,7 +36,6 @@ class PortReader:
         #We any queue given to us to our queue array
         self.binders_queue.append(queue)
 
-
     def new_data(self, data):
         #broadcast new data to the all binders
         for binder in self.binders_queue:
