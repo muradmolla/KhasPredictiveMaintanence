@@ -9,6 +9,7 @@ class PortReader:
         self.port = port
         self.baud = baud
         self.ser = serial.Serial(port, baud)
+        self.ser.flush()
         print("Connection established with device in port", port, "with", baud, "baud rate.")
         self.packet_loss = 0
         self.killed = False
