@@ -3,43 +3,40 @@ import threading
 import json
 import time
 
-time_now = time.time_ns()
 
 class PortReader:
-    def __init__(self, port, baud):
+    def __init__(self, port, baud, isRaw = False):
         self.port = port
         self.baud = baud
         self.ser = serial.Serial(port, baud)
         print("Connection established with device in port", port, "with", baud, "baud rate.")
-        self.data = []
         self.packet_loss = 0
         self.killed = False
         # Start the thread that reads data from the Arduin
         self.thread = threading.Thread(target=self.read_data_from_arduino)
         self.thread.start()
+        
         self.binders_queue =[]
         self.binders_call = []
-        self.time_now = time.time_ns()
+        self.raw_data = isRaw
 
     def read_data_from_arduino(self):
         while not self.killed:
             # Put the latest data into the queue
-            data = SerialData(self.ser.readline())
+            data = SerialData(self.ser.readline(), self.raw_data)
             if (data.lost_packet):
                 self.packet_loss += 1
                 print("Packet loss on port",self.port ,": ", self.packet_loss)
             else:
                 self.new_data(data)
+        self.ser.close()
 
     def bind_queue(self, queue):
         #We any queue given to us to our queue array
         self.binders_queue.append(queue)
-        #We provide the previous data to the binder
-        for i in self.data:
-            queue.put(i)
+
 
     def new_data(self, data):
-        self.data.append(data)
         #broadcast new data to the all binders
         for binder in self.binders_queue:
             binder.put(data)
@@ -54,17 +51,17 @@ class PortReader:
         self.thread.join()
 
 class SerialData:
-    def __init__(self, data):
+    def __init__(self, data, isRaw):
         self._raw_data = data
         self.lost_packet = False
         self.timestamp = time.monotonic_ns()
+        self.isRaw = isRaw
         self.interpret()
+
 
     def interpret(self):
         try:
-            print(self.timestamp)
-            print("=====")
-            data = float(self._raw_data.decode("utf-8"))
+            data = self._raw_data.decode("utf-8") if self.isRaw else float(self._raw_data.decode("utf-8"))
 
             self.data = {
                 "timestamp": self.timestamp,

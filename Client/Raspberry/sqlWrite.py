@@ -1,46 +1,54 @@
 import sqlite3
 from queue import Queue
 import time
+from datetime import datetime
 
 class SqlWrite:
-    def __init__(self, data_provider, date, dataType):
-        self.con = sqlite3.connect(date + ".sqlite")
+    def __init__(self, date, closingHour, closingMinute):
+        self.con = sqlite3.connect("db/" + date + ".sqlite")
         self.cur = self.con.cursor()
-        self.dataType = dataType
         self.killed = False
+        self.data_providers = []
 
-        self.start_writing()
-        self.data_provider = data_provider
-        self.data_queue = Queue(maxsize=0)
+        self.closingHour = closingHour
+        self.closingMinute = closingMinute
 
-        self.data_provider.bind_queue(self.data_queue)
-        self.data_provider.bind_call(self.test)
-        self.writeHelper()
-        
-
-    def start_writing(self):
-        self.cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='"+ self.dataType+"'" )
-
-        #if the count is 1, then table exists
-        if not self.cur.fetchone()[0]==1 : {
-            self.cur.execute("CREATE TABLE " + self.dataType + "(timestamp real, value real)")
+    def bind(self, dataType, dataProvider):
+        dataHolder = {
+            "dataType": dataType,
+            "data_provider": dataProvider,
+            "data_queue": Queue(maxsize=0)
         }
+        dataHolder["data_provider"].bind_queue(dataHolder["data_queue"])
+        self.data_providers.append(dataHolder)
+        
+    def start(self):
+        for provider in self.data_providers:
+            self.cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='"+ provider["dataType"]+"'" )
 
-    def write(self):
-        while not self.data_queue.empty():
-            data = self.data_queue.get().data
-            self.cur.execute("INSERT INTO " + self.dataType + " VALUES(?,?)", (data["timestamp"], data["value"]))
+            #if the count is 1, then table exists
+            if not self.cur.fetchone()[0]==1 : {
+                self.cur.execute("CREATE TABLE " + provider["dataType"] + "(timestamp real, value real)")
+            }
+        self.writeHelper()
 
+    def write(self, provider):
+        while not provider["data_queue"].empty():
+            data = provider["data_queue"].get().data
+            self.cur.execute("INSERT INTO " + provider["dataType"] + " VALUES(?,?)", (data["timestamp"], data["value"]))
 
     def writeHelper(self):
         while not self.killed:
-            self.write()
+            for provider in self.data_providers:
+                self.write(provider)
             self.con.commit()
+            now = datetime.now()
+            if (now.hour == self.closingHour and now.minute >= self.closingMinute) or (now.hour > self.closingHour):
+                self.kill()
             time.sleep(0.01)
 
-    def test(self):
-        True
-
     def kill(self):
+        for provider in self.data_providers:
+            provider["data_provider"].kill()
         self.killed = True
         self.con.close()

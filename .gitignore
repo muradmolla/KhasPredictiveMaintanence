@@ -2,4 +2,9 @@ Server/node_modules/*
 Server/db/*
 !Server/db/.gitkeep
 
+Client/db/*
+!Client/db/.gitkeep
+
+Client/_pycache_
+
 Server/.env

@@ -3,17 +3,32 @@ from queue import Queue
 import portReader
 import sqlWrite
 import sqlite3
+import doubleDataHandler
+from datetime import datetime
 
-#con = sqlite3.connect(date + ".sqlite")
-data_provider = portReader.PortReader("COM3", 9600)
-sql_write = sqlWrite.SqlWrite(data_provider,"test", "testtype")
+date = datetime.now()
+
+# sqlWrite.SqlWrite(nameofdb, closingHours, closingMinutes)
+# program will terminate at closingHours:closingMinutes
+sql_write = sqlWrite.SqlWrite(date.strftime("%Y_%m_%d"), 20, 27)
+
+
+testProvider = portReader.PortReader("COM4", 9600)
+sql_write.bind("test", testProvider)
+
+# PORT, BAUD, isRawData
+testDoubleProvider = portReader.PortReader("COM8", 9600, True)
+
+doubleDataHandler = doubleDataHandler.DoubleDataHandler(testDoubleProvider)
+sql_write.bind("doubleData1", doubleDataHandler.mockProviderA)
+sql_write.bind("doubleData2", doubleDataHandler.mockProviderB)
+doubleDataHandler.start()
 
 
 try:
-    while True:
-        True
-except KeyboardInterrupt:
-    data_provider.kill()
+    sql_write.start()
+except Exception as e:
     sql_write.kill()
-    print("Server Terminated by the user.")
+    doubleDataHandler.killed = True
+    doubleDataHandler.kill()
     exit()
